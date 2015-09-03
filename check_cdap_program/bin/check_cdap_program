@@ -53,6 +53,7 @@ EOF
 # option defaults
 verbose=''
 uri=''
+namespace='default'
 flows=''
 mapreduces=''
 services=''
@@ -73,28 +74,28 @@ while getopts "hvu:f:m:s:S:w:W:t:" opt; do
             verbose=1
             ;;
         u)
-            uri=$OPTARG
+            uri=${OPTARG}
             ;;
         f)
-            flows=$OPTARG
+            flows=${OPTARG}
             ;;
         m)
-            mapreduces=$OPTARG
+            mapreduces=${OPTARG}
             ;;
         s)
-            services=$OPTARG
+            services=${OPTARG}
             ;;
         S)
-            sparks=$OPTARG
+            sparks=${OPTARG}
             ;;
         w)
-            workflows=$OPTARG
+            workflows=${OPTARG}
             ;;
         W)
-            workers=$OPTARG
+            workers=${OPTARG}
             ;;
         t)
-            timeout=$OPTARG
+            timeout=${OPTARG}
             ;;
         \?)
             echo "Invalid option supplied" >&2
@@ -105,40 +106,17 @@ while getopts "hvu:f:m:s:S:w:W:t:" opt; do
 done
 
 # validate args
-if [ -z "$host" ] ; then
-    echo "Error: -H <host> is required"
+if [ -z "${uri}" ] ; then
+    echo "ERROR: -u <uri> is required"
     usage
     exit 3
 fi
 
-if [ -z "$application" ] ; then
-    echo "Error: -a <application> is required"
+if [ -z "${flows}" ] && [ -z "${mapreduces}" ] && [ -z "${services}" ] && \
+   [ -z "${sparks}" ] && [ -z "${workflows}" ] && [ -z "${workers}" ] ; then
+    echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
     usage
     exit 3
-fi
-
-if [ -z "$flow" ] && [ -z "$query" ] ; then
-    echo "Error: either -f <flow> or -q <query> is required"
-    usage
-    exit 3
-fi
-
-if [ -n "$flow" ] && [ -n "$query" ] ; then
-    echo "Error: only one of -f <flow> or -q <query> can be specified"
-    usage
-    exit 3
-fi
-
-# determine entity (flow or query) to check.  technically, these are interchangeable
-entity=""
-if [ -n "$flow" ] ; then
-    entity=$flow
-    entityname="flows"
-    metric="process.events"
-else 
-    entity=$query
-    entityname="procedures"
-    metric="query.requests"
 fi
 
 # confirm that curl is installed
@@ -147,6 +125,9 @@ if [ ! "$(which curl)" != "" ] ; then
   usage
   exit 3
 fi
+
+
+exit
 
 # construct urls
 STATUSURL="http://$host:$restport/$restendpoint/$application/$entityname/$entity/status"
