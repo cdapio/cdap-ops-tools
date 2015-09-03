@@ -3,38 +3,67 @@
 function usage() {
     cat <<EOF
 
-Nagios-style plugin to check status of a Continuuity Flow.
+Nagios-style plugin to check status of CDAP Programs
 
 Requirements:
   curl
 
-Usage: $0 [OPTIONS] -H <host> -a <application> [ -f <flow> | -q <query> ]
+Usage: $0 [-hv] [-t timeout] -u <uri> [-n <namespace>] [-f <app.name>] 
+         [-m <app.name>] [-s <app.name>] [-S <app.name>] [-w <app.name>]
+         [-W <app.name>]
 
 Options:
   -h			Usage info
-  -H <host>		Continuuity api host to check
-  -a <application>	Continuuity Application within which the target flow is running
-  -f <flow>		Continuuity target Flow to check (only one of -f or -q must be specified)
-  -q <query> 		Continuuity target Query to check (only one of -f or -q must bre specified)
-  -v			verbose (debug) output
+  -u <uri>		CDAP Router endpoint to check
+  -n <namespace>        CDAP Namespace to query
+  -f <app.flows>        CDAP target Flow to check. Each Flow must be prepended
+                        with the Application name and delimited with a period.
+                        Multiple Application.Flow pairs can be specified as a
+                        comma-separated list
+  -m <app.mapreduce>    CDAP target MapReduce to check. Each MapReduce must be
+                        prepended with the Application name and delimited with
+                        a period. Multiple Application.MapReduce pairs can be
+                        specified as a comma-separated list
+  -s <app.services> 	CDAP target Service to check. Each Service must be
+                        prepended with the Application name and delimited with
+                        a period. Multiple Application.Service pairs can be
+                        specified as a comma-separated list
+  -S <app.spark>        CDAP target Spark jobs to check. Each Spark job must be
+                        prepended with the Application name and delimited with
+                        a period. Multiple Application.Spark pairs can be
+                        specified as a comma-separated list
+  -w <app.workflows>    CDAP target Workflow to check. Each Workflow must be
+                        prepended with the Application name and delimited with
+                        a period. Multiple Application.Workflow pairs can be
+                        specified as a comma-separated list
+  -W <app.workers>      CDAP target Workers to check. Each Worker must be
+                        prepended with the Application name and delimited with
+                        a period. Multiple Application.Worker pairs can be
+                        specified as a comma-separated list
   -t <timeout>		override default timeout (seconds)
-  -p <port>		override default port
-  -r <rest-endpoint>	override default rest-endpoint
+  -v			verbose (debug) output
+
+Example:
+  $0 -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow
+       -s MyApp.MyService1,MyApp.MyService2
+
 EOF
 }
 
 # option defaults
-verbose=""
-host=""
-application=""
-flow=""
-query=""
+verbose=''
+uri=''
+flows=''
+mapreduces=''
+services=''
+sparks=''
+workflows=''
+workers=''
 timeout=30
-restport=10000
-restendpoint="v2/apps"
+api_version='v3'
 
 # read in args
-while getopts "hvH:a:f:q:t:p:r:" opt; do
+while getopts "hvu:f:m:s:S:w:W:t:" opt; do
     case $opt in
         h)
             usage
@@ -43,26 +72,29 @@ while getopts "hvH:a:f:q:t:p:r:" opt; do
         v)
             verbose=1
             ;;
-        H)
-            host=$OPTARG
-            ;;
-        a)
-            application=$OPTARG
+        u)
+            uri=$OPTARG
             ;;
         f)
-            flow=$OPTARG
+            flows=$OPTARG
             ;;
-        q)
-            query=$OPTARG
+        m)
+            mapreduces=$OPTARG
+            ;;
+        s)
+            services=$OPTARG
+            ;;
+        S)
+            sparks=$OPTARG
+            ;;
+        w)
+            workflows=$OPTARG
+            ;;
+        W)
+            workers=$OPTARG
             ;;
         t)
             timeout=$OPTARG
-            ;;
-        p)
-            restport=$OPTARG
-            ;;
-        r)
-            restendpoint=$OPTARG
             ;;
         \?)
             echo "Invalid option supplied" >&2
