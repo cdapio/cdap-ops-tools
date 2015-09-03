@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+
+function usage() {
+    cat <<EOF
+
+Nagios-style plugin to check status of a Continuuity Flow.
+
+Requirements:
+  curl
+
+Usage: $0 [OPTIONS] -H <host> -a <application> [ -f <flow> | -q <query> ]
+
+Options:
+  -h			Usage info
+  -H <host>		Continuuity api host to check
+  -a <application>	Continuuity Application within which the target flow is running
+  -f <flow>		Continuuity target Flow to check (only one of -f or -q must be specified)
+  -q <query> 		Continuuity target Query to check (only one of -f or -q must bre specified)
+  -v			verbose (debug) output
+  -t <timeout>		override default timeout (seconds)
+  -p <port>		override default port
+  -r <rest-endpoint>	override default rest-endpoint
+EOF
+}
+
+# option defaults
+verbose=""
+host=""
+application=""
+flow=""
+query=""
+timeout=30
+restport=10000
+restendpoint="v2/apps"
+
+# read in args
+while getopts "hvH:a:f:q:t:p:r:" opt; do
+    case $opt in
+        h)
+            usage
+            exit 0
+            ;;
+        v)
+            verbose=1
+            ;;
+        H)
+            host=$OPTARG
+            ;;
+        a)
+            application=$OPTARG
+            ;;
+        f)
+            flow=$OPTARG
+            ;;
+        q)
+            query=$OPTARG
+            ;;
+        t)
+            timeout=$OPTARG
+            ;;
+        p)
+            restport=$OPTARG
+            ;;
+        r)
+            restendpoint=$OPTARG
+            ;;
+        \?)
+            echo "Invalid option supplied" >&2
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# validate args
+if [ -z "$host" ] ; then
+    echo "Error: -H <host> is required"
+    usage
+    exit 3
+fi
+
+if [ -z "$application" ] ; then
+    echo "Error: -a <application> is required"
+    usage
+    exit 3
+fi
+
+if [ -z "$flow" ] && [ -z "$query" ] ; then
+    echo "Error: either -f <flow> or -q <query> is required"
+    usage
+    exit 3
+fi
+
+if [ -n "$flow" ] && [ -n "$query" ] ; then
+    echo "Error: only one of -f <flow> or -q <query> can be specified"
+    usage
+    exit 3
+fi
+
+# determine entity (flow or query) to check.  technically, these are interchangeable
+entity=""
+if [ -n "$flow" ] ; then
+    entity=$flow
+    entityname="flows"
+    metric="process.events"
+else 
+    entity=$query
+    entityname="procedures"
+    metric="query.requests"
+fi
+
+# confirm that curl is installed
+if [ ! "$(which curl)" != "" ] ; then
+  echo "ERROR: curl must be installed and present in \$PATH" 
+  usage
+  exit 3
+fi
+
+# construct urls
+STATUSURL="http://$host:$restport/$restendpoint/$application/$entityname/$entity/status"
+METRICSQRY="[\"/reactor/apps/$application/$entityname/$metric?aggregate=true\"]"
+
+# make the curl call
+if [ -n "$verbose" ] ; then echo "request URL: $STATUSURL" ; fi
+RESP=`curl -k -s -m $timeout -w ' CODE:%{http_code}' $STATUSURL`
+EXITCODE=$?
+
+if [ -n "$verbose" ] ; then echo "response: $RESP" ; fi
+
+# check for failed curl execution 
+if [[ $EXITCODE -ne 0 ]] ; then
+    echo "UNKNOWN: curl error with exit code $EXITCODE, output: $RESP"
+    exit 3
+fi
+
+# check http response code
+if [[ ! $RESP =~ CODE:200 ]] ; then
+    # non-200 http response code
+    echo "UNKNOWN: non-OK http response code returned: $RESP"
+    exit 3
+else 
+    # successful response, trim response code to leave status
+    RESP=`echo "$RESP" | sed -e 's/ CODE:200$//'`
+fi
+
+# check the returned state
+if [ -n "$verbose" ] ; then echo "returned state: $RESP" ; fi
+
+if [[ ! $RESP =~ RUNNING ]] ; then
+    # Flow is not in a running state
+    echo "ERROR: Flow status: $RESP returned from $STATUSURL"
+    exit 2
+fi
+
+# Flow is running, get performance data, does not fail on error
+# For now, we query one top-level metric 
+if [ -n "$verbose" ] ; then echo "metrics QRY: $METRICSQRY" ; fi
+METRICS=`curl -s -X POST -H 'Content-Type: application/json' -d "$METRICSQRY" http://$host:$restport/v2/metrics`
+
+# [{"path":"/reactor/apps/cms/flows/process.events?aggregate\u003dtrue","result":{"data":527739}}]
+METRICNAME=$(echo $METRICS | sed 's/.*\/\(.*\)?.*/\1/g')
+METRICDATA=$(echo $METRICS | sed 's/.*\"data\"\:\([0-9]*\).*/\1/g')
+PERFDATA="|$application.$entity.$METRICNAME=$METRICDATA"
+
+# return success, plus performance data
+
+echo "OK: $entity running$PERFDATA"
+exit 0
+
+
