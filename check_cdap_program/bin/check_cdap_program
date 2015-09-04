@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function usage() {
-    cat <<EOF
+  cat <<EOF
 
 Nagios-style plugin to check status of CDAP Programs
 
@@ -65,59 +65,62 @@ api_version='v3'
 
 # read in args
 while getopts "hvu:f:m:s:S:w:W:t:" opt; do
-    case $opt in
-        h)
-            usage
-            exit 0
-            ;;
-        v)
-            verbose=1
-            ;;
-        u)
-            uri=${OPTARG}
-            ;;
-        f)
-            flows=${OPTARG}
-            ;;
-        m)
-            mapreduces=${OPTARG}
-            ;;
-        s)
-            services=${OPTARG}
-            ;;
-        S)
-            sparks=${OPTARG}
-            ;;
-        w)
-            workflows=${OPTARG}
-            ;;
-        W)
-            workers=${OPTARG}
-            ;;
-        t)
-            timeout=${OPTARG}
-            ;;
-        \?)
-            echo "Invalid option supplied" >&2
-            usage
-            exit 1
-            ;;
-    esac
+  case $opt in
+    h)
+      usage
+      exit 0
+      ;;
+    v)
+      verbose=1
+      ;;
+    u)
+      uri=${OPTARG}
+      ;;
+    f)
+      flows=${OPTARG}
+      ;;
+    m)
+      mapreduces=${OPTARG}
+      ;;
+    s)
+      services=${OPTARG}
+      ;;
+    S)
+      sparks=${OPTARG}
+      ;;
+    w)
+      workflows=${OPTARG}
+      ;;
+    W)
+      workers=${OPTARG}
+      ;;
+    t)
+      timeout=${OPTARG}
+      ;;
+    \?)
+      echo "Invalid option supplied" >&2
+      usage
+      exit 1
+      ;;
+  esac
 done
 
 # validate args
 if [ -z "${uri}" ] ; then
-    echo "ERROR: -u <uri> is required"
-    usage
-    exit 3
+  echo "ERROR: -u <uri> is required"
+  usage
+  exit 3
 fi
 
-if [ -z "${flows}" ] && [ -z "${mapreduces}" ] && [ -z "${services}" ] && \
-   [ -z "${sparks}" ] && [ -z "${workflows}" ] && [ -z "${workers}" ] ; then
-    echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
-    usage
-    exit 3
+if [ -z ${flows} ] && [ -z ${mapreduces} ] && [ -z ${services} ] && \
+   [ -z ${sparks} ] && [ -z ${workflows} ] && [ -z ${workers} ] ; then
+  echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
+  usage
+  exit 3
 fi
+
+#if [ -n ${flows} ] && 
+
 
 # confirm that curl is installed
 if [ ! "$(which curl)" != "" ] ; then
@@ -126,6 +129,69 @@ if [ ! "$(which curl)" != "" ] ; then
   exit 3
 fi
 
+
+function curl_request {
+  __url=${1}
+  __resp=`curl -v -k -s -m ${timeout} -w ' %{http_code}' ${__url}`
+  __exitcode=$?
+
+  # Abort Unknown if failed curl execution
+  if [[ ${__exitcode} -ne 0 ]] ; then
+    echo "UNKNOWN: curl error with exit code ${__exitcode}, output: ${__resp}"
+    exit 3
+  fi
+
+  # Abort Unknown for bad HTTP response codes
+  __respcode=${__resp##* }
+  case ${__respcode} in
+    200)
+      ;;
+    401)
+      echo "UNKNOWN: CDAP Authentication not currently supported: ${__resp}"
+      exit 3
+      ;;
+    *)
+      echo "UNKNOWN: unexpected HTTP response code ${__respcode}: ${__resp}"
+      exit 3
+      ;;
+  esac
+
+__curr_resp=${__resp%% *}
+}
+
+
+
+
+function get_flow_status {
+  get_program_status $1 'flows'
+}
+function get_mapreduce_status {
+  get_program_status $1 'mapreduce'
+}
+function get_service_status {
+  get_program_status $1 'services'
+}
+function get_spark_status {
+  get_program_status $1 'spark'
+}
+function get_workflow_status {
+  get_program_status $1 'workflows'
+}
+function get_worker_status {
+  get_program_status $1 'workers'
+}
+
+function get_program_status {
+  IFS='.' read appname flowname <<< "${1}"
+  __progtype=${2}
+  curl_request "${uri}/${api_version}/namespaces/${namespace}/apps/${appname}/${__progtype}/${flowname}/status"
+}
+
+
+#curl_request "${uri}/v3/namespaces/${namespace}/apps/PurchaseHistory/mapreduce/PurchaseHistoryBuilder/status"
+get_flow_status $flows
+
+echo "CURR: ${__curr_resp}"
 
 exit
 
