@@ -158,7 +158,6 @@ function get_program_status {
   __progtype=${2}
   __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
 "/${__appname}/${__progtype}/${__flowname}/status"
-  echo "${__status_url}"
   cdap_curl_request ${__status_url}
 
   # Trim result to single status string
@@ -207,7 +206,7 @@ __curr_resp=${__resp%% *}
 function process_result {
   __program=${1}
   __status=${2}
-  echo "processing ${__program} ${__status}"
+
   # Append to, or initialize, result message
   if [ -z ${res_message} ] ; then
     res_message=${__program}=${__status}
