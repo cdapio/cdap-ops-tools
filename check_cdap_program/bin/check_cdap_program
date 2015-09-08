@@ -126,7 +126,7 @@ fi
 #if [ -n ${flows} ] && 
 
 
-# confirm that curl is installed
+# Confirm that curl is installed
 if [ ! "$(which curl)" != "" ] ; then
   echo "ERROR: curl must be installed and present in \$PATH" 
   usage
@@ -134,9 +134,46 @@ if [ ! "$(which curl)" != "" ] ; then
 fi
 
 
-function curl_request {
+function get_flow_status {
+  get_program_status $1 'flows'
+}
+function get_mapreduce_status {
+  get_program_status $1 'mapreduce'
+}
+function get_service_status {
+  get_program_status $1 'services'
+}
+function get_spark_status {
+  get_program_status $1 'spark'
+}
+function get_workflow_status {
+  get_program_status $1 'workflows'
+}
+function get_worker_status {
+  get_program_status $1 'workers'
+}
+
+function get_program_status {
+  IFS='.' read __appname __flowname <<< "${1}"
+  __progtype=${2}
+  __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
+"/${__appname}/${__progtype}/${__flowname}/status"
+  echo "${__status_url}"
+  cdap_curl_request ${__status_url}
+
+  # Trim result to single status string
+  __curr_resp=${__curr_resp%\"*}
+  __curr_resp=${__curr_resp##*\"}
+}
+
+function cdap_curl_request {
   __url=${1}
-  __resp=`curl -v -k -s -m ${timeout} -w ' %{http_code}' ${__url}`
+  if [ -n "${verbose}" ]; then
+    __v_flag='-v'
+  else
+    __v_flag=''
+  fi
+  __resp=`curl ${__v_flag} -k -s -m ${timeout} -w ' %{http_code}' ${__url}`
   __exitcode=$?
 
   # Abort Unknown if failed curl execution
@@ -145,7 +182,7 @@ function curl_request {
     exit 3
   fi
 
-  # Abort Unknown for bad HTTP response codes
+  # Handle per HTTP response code
   __respcode=${__resp##* }
   case ${__respcode} in
     200)
@@ -155,8 +192,7 @@ function curl_request {
       exit 3
       ;;
     404)
-      # Specified program not found. Treat this as an error
-      echo "CRITICAL: CDAP Program not found ${__respcode}: ${__url}"
+      echo "CRITICAL: CDAP Endpoint not found ${__respcode}: ${__url}"
       exit 2
       ;;
     *)
@@ -186,74 +222,43 @@ function process_result {
 }
 
 
-function get_flow_status {
-  get_program_status $1 'flows'
-}
-function get_mapreduce_status {
-  get_program_status $1 'mapreduce'
-}
-function get_service_status {
-  get_program_status $1 'services'
-}
-function get_spark_status {
-  get_program_status $1 'spark'
-}
-function get_workflow_status {
-  get_program_status $1 'workflows'
-}
-function get_worker_status {
-  get_program_status $1 'workers'
-}
-
-function get_program_status {
-  IFS='.' read __appname __flowname <<< "${1}"
-  __progtype=${2}
-  __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
-"/${__appname}/${__progtype}/${__flowname}/status"
-  echo "${__status_url}"
-  curl_request ${__status_url}
-
-  # Trim result to single status string
-  __curr_resp=${__curr_resp%\"*}
-  __curr_resp=${__curr_resp##*\"}
-}
-
-# Process flows
+# Check flows
 IFS=',' read -ra __flows <<< "${flows}"
 for __flow in "${__flows[@]}"; do
   get_flow_status ${__flow} && process_result ${__flow} ${__curr_resp}
 done
 
-# Process MapReduces
+# Check MapReduces
 IFS=',' read -ra __mapreduces <<< "${mapreduces}"
 for __mapreduce in "${__mapreduces[@]}"; do
   get_mapreduce_status ${__mapreduce} && process_result ${__mapreduce} ${__curr_resp}
 done
 
-# Process Services
+# Check Services
 IFS=',' read -ra __services <<< "${services}"
 for __service in "${__services[@]}"; do
   get_service_status ${__service} && process_result ${__service} ${__curr_resp}
 done
 
-# Process Spark jobs
+# Check Spark jobs
 IFS=',' read -ra __sparks <<< "${sparks}"
 for __spark in "${__sparks[@]}"; do
   get_spark_status ${__spark} && process_result ${__spark} ${__curr_resp}
 done
 
-# Process Workflows
+# Check Workflows
 IFS=',' read -ra __workflows <<< "${workflows}"
 for __workflow in "${__workflows[@]}"; do
   get_workflow_status ${__workflow} && process_result ${__workflow} ${__curr_resp}
 done
 
-# Process Workers
+# Check Workers
 IFS=',' read -ra __workers <<< "${workers}"
 for __worker in "${__workers[@]}"; do
   get_worker_status ${__worker} && process_result ${__worker} ${__curr_resp}
 done
 
+# Prepend result message with status string
 case $res_status in
   0)
     res_message="OK: ${res_message}"
@@ -269,6 +274,7 @@ case $res_status in
     ;;
 esac
 
+# Display result to user and exit
 echo $res_message
 exit $res_status
 
