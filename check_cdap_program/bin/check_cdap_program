@@ -50,7 +50,7 @@ Example:
 EOF
 }
 
-# option defaults
+# Option defaults
 verbose=''
 uri=''
 namespace='default'
@@ -63,7 +63,11 @@ workers=''
 timeout=30
 api_version='v3'
 
-# read in args
+# Results
+res_status=0
+res_message=''
+
+# Read in args
 while getopts "hvu:f:m:s:S:w:W:t:" opt; do
   case $opt in
     h)
@@ -105,7 +109,7 @@ while getopts "hvu:f:m:s:S:w:W:t:" opt; do
   esac
 done
 
-# validate args
+# Validate args
 if [ -z "${uri}" ] ; then
   echo "ERROR: -u <uri> is required"
   usage
@@ -150,6 +154,11 @@ function curl_request {
       echo "UNKNOWN: CDAP Authentication not currently supported: ${__resp}"
       exit 3
       ;;
+    404)
+      # Specified program not found. Treat this as an error
+      echo "CRITICAL: CDAP Program not found ${__respcode}: ${__url}"
+      exit 2
+      ;;
     *)
       echo "UNKNOWN: unexpected HTTP response code ${__respcode}: ${__resp}"
       exit 3
@@ -159,7 +168,22 @@ function curl_request {
 __curr_resp=${__resp%% *}
 }
 
+function process_result {
+  __program=${1}
+  __status=${2}
+  echo "processing ${__program} ${__status}"
+  # Append to, or initialize, result message
+  if [ -z ${res_message} ] ; then
+    res_message=${__program}=${__status}
+  else
+    res_message=${res_message},${__program}=${__status}
+  fi
 
+  # Set cumulative exit status
+  if [[ ! ${__status} =~ RUNNING ]] ; then
+    res_status=2
+  fi
+}
 
 
 function get_flow_status {
@@ -182,18 +206,72 @@ function get_worker_status {
 }
 
 function get_program_status {
-  IFS='.' read appname flowname <<< "${1}"
+  IFS='.' read __appname __flowname <<< "${1}"
   __progtype=${2}
-  curl_request "${uri}/${api_version}/namespaces/${namespace}/apps/${appname}/${__progtype}/${flowname}/status"
+  __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
+"/${__appname}/${__progtype}/${__flowname}/status"
+  echo "${__status_url}"
+  curl_request ${__status_url}
+
+  # Trim result to single status string
+  __curr_resp=${__curr_resp%\"*}
+  __curr_resp=${__curr_resp##*\"}
 }
 
+# Process flows
+IFS=',' read -ra __flows <<< "${flows}"
+for __flow in "${__flows[@]}"; do
+  get_flow_status ${__flow} && process_result ${__flow} ${__curr_resp}
+done
 
-#curl_request "${uri}/v3/namespaces/${namespace}/apps/PurchaseHistory/mapreduce/PurchaseHistoryBuilder/status"
-get_flow_status $flows
+# Process MapReduces
+IFS=',' read -ra __mapreduces <<< "${mapreduces}"
+for __mapreduce in "${__mapreduces[@]}"; do
+  get_mapreduce_status ${__mapreduce} && process_result ${__mapreduce} ${__curr_resp}
+done
 
-echo "CURR: ${__curr_resp}"
+# Process Services
+IFS=',' read -ra __services <<< "${services}"
+for __service in "${__services[@]}"; do
+  get_service_status ${__service} && process_result ${__service} ${__curr_resp}
+done
 
-exit
+# Process Spark jobs
+IFS=',' read -ra __sparks <<< "${sparks}"
+for __spark in "${__sparks[@]}"; do
+  get_spark_status ${__spark} && process_result ${__spark} ${__curr_resp}
+done
+
+# Process Workflows
+IFS=',' read -ra __workflows <<< "${workflows}"
+for __workflow in "${__workflows[@]}"; do
+  get_workflow_status ${__workflow} && process_result ${__workflow} ${__curr_resp}
+done
+
+# Process Workers
+IFS=',' read -ra __workers <<< "${workers}"
+for __worker in "${__workers[@]}"; do
+  get_worker_status ${__worker} && process_result ${__worker} ${__curr_resp}
+done
+
+case $res_status in
+  0)
+    res_message="OK: ${res_message}"
+    ;;
+  1)
+    res_message="WARN: ${res_message}"
+    ;;
+  2)
+    res_message="CRITICAL: ${res_message}"
+    ;;
+  *)
+    res_message="UNKNOWN: ${res_message}"
+    ;;
+esac
+
+echo $res_message
+exit $res_status
+
 
 # construct urls
 STATUSURL="http://$host:$restport/$restendpoint/$application/$entityname/$entity/status"
