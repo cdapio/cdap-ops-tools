@@ -149,6 +149,9 @@ if [ ! "$(which curl)" != "" ] ; then
 fi
 
 
+# Convenience wrapper functions for get_program_status
+#   Input:
+#     Arg1: A single CDAP program specification: app-id.program-id
 function get_flow_status {
   get_program_status $1 'flows'
 }
@@ -168,10 +171,16 @@ function get_worker_status {
   get_program_status $1 'workers'
 }
 
+# Get CDAP Program status
+#   Input:
+#     Arg1: A single CDAP program specification: app-id.program-id
+#     Arg2: API program-type: (flows, mapreduce, services, etc)
+#   Output:
+#     __curr_resp: trimmed response string, ie 'RUNNING', 'STOPPED', etc
 function get_program_status {
   IFS='.' read __appname __flowname <<< "${1}"
-  __progtype=${2}
-  __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
+  local __progtype=${2}
+  local __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
 "/${__appname}/${__progtype}/${__flowname}/status"
   cdap_curl_request ${__status_url}
 
@@ -180,15 +189,20 @@ function get_program_status {
   __curr_resp=${__curr_resp##*\"}
 }
 
+# Makes a curl request to CDAP API. Fails fast on any non-200 HTTP return code
+#   Input:
+#     Arg1: API endpoint url
+#     ${verbose}
+#   Output:
+#     ${__curr_resp}: response body, ie '{ "status":"RUNNING" }'
 function cdap_curl_request {
-  __url=${1}
+  local __url=${1}
+  local __v_flag=''
   if [ -n "${verbose}" ]; then
     __v_flag='-v'
-  else
-    __v_flag=''
   fi
-  __resp=`curl ${__v_flag} -k -s -m ${timeout} -w ' %{http_code}' ${__url}`
-  __exitcode=$?
+  local __resp=`curl ${__v_flag} -k -s -m ${timeout} -w ' %{http_code}' ${__url}`
+  local __exitcode=$?
 
   # Abort Unknown if failed curl execution
   if [[ ${__exitcode} -ne 0 ]] ; then
@@ -197,7 +211,7 @@ function cdap_curl_request {
   fi
 
   # Handle per HTTP response code
-  __respcode=${__resp##* }
+  local __respcode=${__resp##* }
   case ${__respcode} in
     200)
       ;;
@@ -215,9 +229,17 @@ function cdap_curl_request {
       ;;
   esac
 
+# "Return" body portion of response
 __curr_resp=${__resp%% *}
 }
 
+# Records a single program status into the aggregate response
+#   Input:
+#     Arg1: A single CDAP program specification: app-id.program-id
+#     Arg2: program status string, ie RUNNING, STOPPED, etc
+#   Output:
+#     ${res_message} update
+#     ${res_status} update
 function process_result {
   __program=${1}
   __status=${2}
@@ -291,57 +313,3 @@ esac
 # Display result to user and exit
 echo $res_message
 exit $res_status
-
-
-# construct urls
-STATUSURL="http://$host:$restport/$restendpoint/$application/$entityname/$entity/status"
-METRICSQRY="[\"/reactor/apps/$application/$entityname/$metric?aggregate=true\"]"
-
-# make the curl call
-if [ -n "$verbose" ] ; then echo "request URL: $STATUSURL" ; fi
-RESP=`curl -k -s -m $timeout -w ' CODE:%{http_code}' $STATUSURL`
-EXITCODE=$?
-
-if [ -n "$verbose" ] ; then echo "response: $RESP" ; fi
-
-# check for failed curl execution 
-if [[ $EXITCODE -ne 0 ]] ; then
-    echo "UNKNOWN: curl error with exit code $EXITCODE, output: $RESP"
-    exit 3
-fi
-
-# check http response code
-if [[ ! $RESP =~ CODE:200 ]] ; then
-    # non-200 http response code
-    echo "UNKNOWN: non-OK http response code returned: $RESP"
-    exit 3
-else 
-    # successful response, trim response code to leave status
-    RESP=`echo "$RESP" | sed -e 's/ CODE:200$//'`
-fi
-
-# check the returned state
-if [ -n "$verbose" ] ; then echo "returned state: $RESP" ; fi
-
-if [[ ! $RESP =~ RUNNING ]] ; then
-    # Flow is not in a running state
-    echo "ERROR: Flow status: $RESP returned from $STATUSURL"
-    exit 2
-fi
-
-# Flow is running, get performance data, does not fail on error
-# For now, we query one top-level metric 
-if [ -n "$verbose" ] ; then echo "metrics QRY: $METRICSQRY" ; fi
-METRICS=`curl -s -X POST -H 'Content-Type: application/json' -d "$METRICSQRY" http://$host:$restport/v2/metrics`
-
-# [{"path":"/reactor/apps/cms/flows/process.events?aggregate\u003dtrue","result":{"data":527739}}]
-METRICNAME=$(echo $METRICS | sed 's/.*\/\(.*\)?.*/\1/g')
-METRICDATA=$(echo $METRICS | sed 's/.*\"data\"\:\([0-9]*\).*/\1/g')
-PERFDATA="|$application.$entity.$METRICNAME=$METRICDATA"
-
-# return success, plus performance data
-
-echo "OK: $entity running$PERFDATA"
-exit 0
-
-
