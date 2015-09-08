@@ -66,17 +66,18 @@ EOF
 }
 
 # Option defaults
-verbose=''
-uri=''
-namespace='default'
-flows=''
-mapreduces=''
-services=''
-sparks=''
-workflows=''
-workers=''
-timeout=30
-api_version='v3'
+OPT_VERBOSE=''
+OPT_URI=''
+OPT_NAMESPACE='default'
+OPT_FLOWS=''
+OPT_MAPREDUCES=''
+OPT_SERVICES=''
+OPT_SPARKS=''
+OPT_WORKFLOWS=''
+OPT_WORKERS=''
+OPT_TIMEOUT=30
+
+API_VERSION='v3'
 
 # Results
 res_status=0
@@ -90,31 +91,31 @@ while getopts "hvu:f:m:s:S:w:W:t:" opt; do
       exit 0
       ;;
     v)
-      verbose=1
+      OPT_VERBOSE=1
       ;;
     u)
-      uri=${OPTARG}
+      OPT_URI=${OPTARG}
       ;;
     f)
-      flows=${OPTARG}
+      OPT_FLOWS=${OPTARG}
       ;;
     m)
-      mapreduces=${OPTARG}
+      OPT_MAPREDUCES=${OPTARG}
       ;;
     s)
-      services=${OPTARG}
+      OPT_SERVICES=${OPTARG}
       ;;
     S)
-      sparks=${OPTARG}
+      OPT_SPARKS=${OPTARG}
       ;;
     w)
-      workflows=${OPTARG}
+      OPT_WORKFLOWS=${OPTARG}
       ;;
     W)
-      workers=${OPTARG}
+      OPT_WORKERS=${OPTARG}
       ;;
     t)
-      timeout=${OPTARG}
+      OPT_TIMEOUT=${OPTARG}
       ;;
     \?)
       echo "Invalid option supplied" >&2
@@ -125,14 +126,14 @@ while getopts "hvu:f:m:s:S:w:W:t:" opt; do
 done
 
 # Validate args
-if [ -z "${uri}" ] ; then
+if [ -z "${OPT_URI}" ] ; then
   echo "ERROR: -u <uri> is required"
   usage
   exit 3
 fi
 
-if [ -z ${flows} ] && [ -z ${mapreduces} ] && [ -z ${services} ] && \
-   [ -z ${sparks} ] && [ -z ${workflows} ] && [ -z ${workers} ] ; then
+if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && [ -z ${OPT_SERVICES} ] && \
+   [ -z ${OPT_SPARKS} ] && [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
   echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
   usage
   exit 3
@@ -179,7 +180,7 @@ function get_worker_status {
 function get_program_status {
   IFS='.' read __appname __flowname <<< "${1}"
   local __progtype=${2}
-  local __status_url="${uri}/${api_version}/namespaces/${namespace}/apps"\
+  local __status_url="${OPT_URI}/${API_VERSION}/namespaces/${OPT_NAMESPACE}/apps"\
 "/${__appname}/${__progtype}/${__flowname}/status"
   cdap_curl_request ${__status_url}
 
@@ -191,7 +192,7 @@ function get_program_status {
 # Makes a curl request to CDAP API. Fails fast on any non-200 HTTP return code
 #   Input:
 #     Arg1: API endpoint url
-#     ${verbose}
+#     ${OPT_VERBOSE}
 #   Output:
 #     ${__curr_resp}: response body, ie '{ "status":"RUNNING" }'
 # TODO: add "token" option to pass an auth token header
@@ -199,10 +200,10 @@ function get_program_status {
 function cdap_curl_request {
   local __url=${1}
   local __v_flag=''
-  if [ -n "${verbose}" ]; then
+  if [ -n "${OPT_VERBOSE}" ]; then
     __v_flag='-v'
   fi
-  local __resp=`curl ${__v_flag} -k -s -m ${timeout} -w ' %{http_code}' ${__url}`
+  local __resp=`curl ${__v_flag} -k -s -m ${OPT_TIMEOUT} -w ' %{http_code}' ${__url}`
   local __exitcode=$?
 
   # Abort Unknown if failed curl execution
@@ -258,38 +259,39 @@ function process_result {
   fi
 }
 
-# Check flows
-IFS=',' read -ra __flows <<< "${flows}"
+# Begin main logic
+# Check specified flows
+IFS=',' read -ra __flows <<< "${OPT_FLOWS}"
 for __flow in "${__flows[@]}"; do
   get_flow_status ${__flow} && process_result ${__flow} ${__curr_resp}
 done
 
-# Check MapReduces
-IFS=',' read -ra __mapreduces <<< "${mapreduces}"
+# Check specified MapReduces
+IFS=',' read -ra __mapreduces <<< "${OPT_MAPREDUCES}"
 for __mapreduce in "${__mapreduces[@]}"; do
   get_mapreduce_status ${__mapreduce} && process_result ${__mapreduce} ${__curr_resp}
 done
 
-# Check Services
-IFS=',' read -ra __services <<< "${services}"
+# Check specified Services
+IFS=',' read -ra __services <<< "${OPT_SERVICES}"
 for __service in "${__services[@]}"; do
   get_service_status ${__service} && process_result ${__service} ${__curr_resp}
 done
 
-# Check Spark jobs
-IFS=',' read -ra __sparks <<< "${sparks}"
+# Check specified Spark jobs
+IFS=',' read -ra __sparks <<< "${OPT_SPARKS}"
 for __spark in "${__sparks[@]}"; do
   get_spark_status ${__spark} && process_result ${__spark} ${__curr_resp}
 done
 
-# Check Workflows
-IFS=',' read -ra __workflows <<< "${workflows}"
+# Check specified Workflows
+IFS=',' read -ra __workflows <<< "${OPT_WORKFLOWS}"
 for __workflow in "${__workflows[@]}"; do
   get_workflow_status ${__workflow} && process_result ${__workflow} ${__curr_resp}
 done
 
-# Check Workers
-IFS=',' read -ra __workers <<< "${workers}"
+# Check specified Workers
+IFS=',' read -ra __workers <<< "${OPT_WORKERS}"
 for __worker in "${__workers[@]}"; do
   get_worker_status ${__worker} && process_result ${__worker} ${__curr_resp}
 done
