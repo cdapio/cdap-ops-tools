@@ -132,8 +132,9 @@ if [ -z "${OPT_URI}" ] ; then
   exit 3
 fi
 
-if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && [ -z ${OPT_SERVICES} ] && \
-   [ -z ${OPT_SPARKS} ] && [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
+if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
+   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
+   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
   echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
   usage
   exit 3
@@ -180,8 +181,8 @@ function get_worker_status {
 function get_program_status {
   IFS='.' read __appname __flowname <<< "${1}"
   local __progtype=${2}
-  local __status_url="${OPT_URI}/${API_VERSION}/namespaces/${OPT_NAMESPACE}/apps"\
-"/${__appname}/${__progtype}/${__flowname}/status"
+  local __status_url="${OPT_URI}/${API_VERSION}/namespaces/${OPT_NAMESPACE}"\
+"/apps/${__appname}/${__progtype}/${__flowname}/status"
   cdap_curl_request ${__status_url}
 
   # Trim result to single status string
@@ -268,8 +269,8 @@ done
 
 # Check specified MapReduces
 IFS=',' read -ra __mapreduces <<< "${OPT_MAPREDUCES}"
-for __mapreduce in "${__mapreduces[@]}"; do
-  get_mapreduce_status ${__mapreduce} && process_result ${__mapreduce} ${__curr_resp}
+for __mr in "${__mapreduces[@]}"; do
+  get_mapreduce_status ${__mr} && process_result ${__mr} ${__curr_resp}
 done
 
 # Check specified Services
@@ -286,8 +287,8 @@ done
 
 # Check specified Workflows
 IFS=',' read -ra __workflows <<< "${OPT_WORKFLOWS}"
-for __workflow in "${__workflows[@]}"; do
-  get_workflow_status ${__workflow} && process_result ${__workflow} ${__curr_resp}
+for __wf in "${__workflows[@]}"; do
+  get_workflow_status ${__wf} && process_result ${__wf} ${__curr_resp}
 done
 
 # Check specified Workers
