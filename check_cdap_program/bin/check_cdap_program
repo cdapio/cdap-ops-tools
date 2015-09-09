@@ -14,7 +14,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
 function usage() {
   cat <<EOF
 
@@ -23,9 +22,9 @@ Nagios-style plugin to check status of CDAP Programs
 Requirements:
   curl
 
-Usage: $0 [-hv] [-t timeout] -u <uri> [-n <namespace>] [-f <app.flow>] 
+Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [-f <app.flow>] 
          [-m <app.mapreduce>] [-s <app.service>] [-S <app.spark>]
-         [-w <app.workflow>] [-W <app.worker>]
+         [-w <app.workflow>] [-W <app.worker>] [-T <token>]
 
 Options:
   -h			Usage info
@@ -56,6 +55,8 @@ Options:
                         a period. Multiple Application.Worker pairs can be
                         specified as a comma-separated list
   -t <timeout>		override default timeout (seconds)
+  -T <token>            CDAP Access Token
+  -k                    Disable SSL certification validation
   -v			verbose (debug) output
 
 Example:
@@ -78,6 +79,8 @@ OPT_SPARKS=''
 OPT_WORKFLOWS=''
 OPT_WORKERS=''
 OPT_TIMEOUT=30
+OPT_TOKEN=''
+OPT_SSL_INSECURE=''
 
 API_VERSION='v3'
 
@@ -93,7 +96,7 @@ res_status=0
 res_message=''
 
 # Read in args
-while getopts "hvu:f:m:s:S:w:W:t:" opt; do
+while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
   case $opt in
     h)
       usage
@@ -125,6 +128,12 @@ while getopts "hvu:f:m:s:S:w:W:t:" opt; do
       ;;
     t)
       OPT_TIMEOUT=${OPTARG}
+      ;;
+    T)
+      OPT_TOKEN=${OPTARG}
+      ;;
+    k)
+      OPT_SSL_INSECURE=1
       ;;
     \?)
       echo "Invalid option supplied" >&2
@@ -211,9 +220,18 @@ function get_program_status {
 # TODO: add "insecure" option to set -k here
 function cdap_curl_request {
   local __url=${1}
-  local __v_flag=''
-  [[ ${OPT_VERBOSE} ]] && __v_flag='-v'
-  local __resp=`curl ${__v_flag} -k -s -m ${OPT_TIMEOUT} -w ' %{http_code}' ${__url}`
+
+  # Build curl command
+  local __curl_cmd="curl -s -m ${OPT_TIMEOUT} -w ' %{http_code}'"
+  [[ ${OPT_VERBOSE} ]] && __curl_cmd="${__curl_cmd} -v"
+  [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd="${__curl_cmd} -k"
+  if [ -n "${OPT_TOKEN}" ] ; then
+    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer ${OPT_TOKEN}'"
+  fi
+  __curl_cmd="${__curl_cmd} ${__url}"
+
+  # Run curl command
+  local __resp=$(eval ${__curl_cmd})
   local __exitcode=$?
 
   # Abort Unknown if failed curl execution
@@ -228,7 +246,11 @@ function cdap_curl_request {
     200)
       ;;
     401)
-      echo "UNKNOWN: CDAP Authentication not currently supported: ${__resp}"
+      if [ -n "${OPT_TOKEN}" ] ; then
+        echo "UNKNOWN: Invalid CDAP Access Token: ${__resp}"
+      else
+        echo "UNKNOWN: CDAP Access Token required: ${__resp}"
+      fi
       exit ${UNKNOWN}
       ;;
     404)
