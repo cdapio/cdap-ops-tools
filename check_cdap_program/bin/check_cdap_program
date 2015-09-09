@@ -216,8 +216,6 @@ function get_program_status {
 #     ${OPT_VERBOSE}
 #   Output:
 #     ${__curr_resp}: response body, ie '{ "status":"RUNNING" }'
-# TODO: add "token" option to pass an auth token header
-# TODO: add "insecure" option to set -k here
 function cdap_curl_request {
   local __url=${1}
 
