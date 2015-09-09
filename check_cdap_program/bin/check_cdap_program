@@ -153,7 +153,7 @@ fi
 #         comma-separated program specifications
 
 # Confirm that curl is installed
-if [ ! "$(which curl)" != "" ] ; then
+if [[ ! $(which curl) ]] ; then
   echo "ERROR: curl must be installed and present in \$PATH" 
   usage
   exit ${UNKNOWN}
@@ -192,6 +192,8 @@ function get_program_status {
   local __progtype=${2}
   local __status_url="${OPT_URI}/${API_VERSION}/namespaces/${OPT_NAMESPACE}"\
 "/apps/${__appname}/${__progtype}/${__flowname}/status"
+
+  # Prep and execute a curl request
   cdap_curl_request ${__status_url}
 
   # Trim result to single status string
@@ -210,9 +212,7 @@ function get_program_status {
 function cdap_curl_request {
   local __url=${1}
   local __v_flag=''
-  if [ -n "${OPT_VERBOSE}" ]; then
-    __v_flag='-v'
-  fi
+  [[ ${OPT_VERBOSE} ]] && __v_flag='-v'
   local __resp=`curl ${__v_flag} -k -s -m ${OPT_TIMEOUT} -w ' %{http_code}' ${__url}`
   local __exitcode=$?
 
@@ -257,7 +257,7 @@ function process_result {
   local __status=${2}
 
   # Append to, or initialize, result message
-  if [ -z ${res_message} ] ; then
+  if [ -z "${res_message}" ] ; then
     res_message=${__program}=${__status}
   else
     res_message=${res_message},${__program}=${__status}
@@ -307,7 +307,7 @@ for __worker in "${__workers[@]}"; do
 done
 
 # Prepend result message with status string
-case $res_status in
+case ${res_status} in
   0)
     res_message="OK: ${res_message}"
     ;;
@@ -323,5 +323,5 @@ case $res_status in
 esac
 
 # Display result to user and exit
-echo $res_message
-exit $res_status
+echo ${res_message}
+exit ${res_status}
