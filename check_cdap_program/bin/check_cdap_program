@@ -22,7 +22,7 @@ Nagios-style plugin to check status of CDAP Programs
 Requirements:
   curl
 
-Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [-f <app.flow>] 
+Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [-f <app.flow>]
          [-m <app.mapreduce>] [-s <app.service>] [-S <app.spark>]
          [-w <app.workflow>] [-W <app.worker>] [-T <token>]
 
