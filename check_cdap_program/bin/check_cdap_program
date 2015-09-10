@@ -70,16 +70,16 @@ EOF
 
 # Option defaults
 OPT_VERBOSE=''
-OPT_URI=''
-OPT_NAMESPACE='default'
-OPT_FLOWS=''
-OPT_MAPREDUCES=''
-OPT_SERVICES=''
-OPT_SPARKS=''
-OPT_WORKFLOWS=''
-OPT_WORKERS=''
-OPT_TIMEOUT=30
-OPT_TOKEN=''
+CHECK_CDAP_PROGRAM_URI=${CHECK_CDAP_PROGRAM_URI:-''}
+CHECK_CDAP_PROGRAM_NAMESPACE=${CHECK_CDAP_PROGRAM_NAMESPACE:-'default'}
+CHECK_CDAP_PROGRAM_FLOWS=${CHECK_CDAP_PROGRAM_FLOWS:-''}
+CHECK_CDAP_PROGRAM_MAPREDUCES=${CHECK_CDAP_PROGRAM_MAPREDUCES:-''}
+CHECK_CDAP_PROGRAM_SERVICES=${CHECK_CDAP_PROGRAM_SERVICES:-''}
+CHECK_CDAP_PROGRAM_SPARKS=${CHECK_CDAP_PROGRAM_SPARKS:-''}
+CHECK_CDAP_PROGRAM_WORKFLOWS=${CHECK_CDAP_PROGRAM_WORKFLOWS:-''}
+CHECK_CDAP_PROGRAM_WORKERS=${CHECK_CDAP_PROGRAM_WORKERS:-''}
+CHECK_CDAP_PROGRAM_TIMEOUT=${CHECK_CDAP_PROGRAM_TIMEOUT:-30}
+CHECK_CDAP_PROGRAM_TOKEN=${CHECK_CDAP_PROGRAM_TOKEN:-''}
 OPT_SSL_INSECURE=''
 
 API_VERSION='v3'
@@ -105,31 +105,31 @@ while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
       OPT_VERBOSE=1
       ;;
     u)
-      OPT_URI=${OPTARG}
+      CHECK_CDAP_PROGRAM_URI=${OPTARG}
       ;;
     f)
-      OPT_FLOWS=${OPTARG}
+      CHECK_CDAP_PROGRAM_FLOWS=${OPTARG}
       ;;
     m)
-      OPT_MAPREDUCES=${OPTARG}
+      CHECK_CDAP_PROGRAM_MAPREDUCES=${OPTARG}
       ;;
     s)
-      OPT_SERVICES=${OPTARG}
+      CHECK_CDAP_PROGRAM_SERVICES=${OPTARG}
       ;;
     S)
-      OPT_SPARKS=${OPTARG}
+      CHECK_CDAP_PROGRAM_SPARKS=${OPTARG}
       ;;
     w)
-      OPT_WORKFLOWS=${OPTARG}
+      CHECK_CDAP_PROGRAM_WORKFLOWS=${OPTARG}
       ;;
     W)
-      OPT_WORKERS=${OPTARG}
+      CHECK_CDAP_PROGRAM_WORKERS=${OPTARG}
       ;;
     t)
-      OPT_TIMEOUT=${OPTARG}
+      CHECK_CDAP_PROGRAM_TIMEOUT=${OPTARG}
       ;;
     T)
-      OPT_TOKEN=${OPTARG}
+      CHECK_CDAP_PROGRAM_TOKEN=${OPTARG}
       ;;
     k)
       OPT_SSL_INSECURE=1
@@ -198,7 +198,7 @@ function get_worker_status {
 function get_program_status {
   IFS='.' read __appname __flowname <<< "${1}"
   local __progtype=${2}
-  local __status_url="${OPT_URI}/${API_VERSION}/namespaces/${OPT_NAMESPACE}"\
+  local __status_url="${CHECK_CDAP_PROGRAM_URI}/${API_VERSION}/namespaces/${CHECK_CDAP_PROGRAM_NAMESPACE}"\
 "/apps/${__appname}/${__progtype}/${__flowname}/status"
 
   # Prep and execute a curl request
@@ -219,11 +219,11 @@ function cdap_curl_request {
   local __url=${1}
 
   # Build curl command
-  local __curl_cmd="curl -s -m ${OPT_TIMEOUT} -w ' %{http_code}'"
+  local __curl_cmd="curl -s -m ${CHECK_CDAP_PROGRAM_TIMEOUT} -w ' %{http_code}'"
   [[ ${OPT_VERBOSE} ]] && __curl_cmd="${__curl_cmd} -v"
   [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd="${__curl_cmd} -k"
-  if [ -n "${OPT_TOKEN}" ] ; then
-    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer ${OPT_TOKEN}'"
+  if [ -n "${CHECK_CDAP_PROGRAM_TOKEN}" ] ; then
+    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer ${CHECK_CDAP_PROGRAM_TOKEN}'"
   fi
   __curl_cmd="${__curl_cmd} ${__url}"
 
@@ -243,7 +243,7 @@ function cdap_curl_request {
     200)
       ;;
     401)
-      if [ -n "${OPT_TOKEN}" ] ; then
+      if [ -n "${CHECK_CDAP_PROGRAM_TOKEN}" ] ; then
         echo "UNKNOWN: Invalid CDAP Access Token: ${__resp}"
       else
         echo "UNKNOWN: CDAP Access Token required: ${__resp}"
@@ -291,15 +291,15 @@ function process_result {
 # Begin main logic
 
 # Validate args
-if [ -z "${OPT_URI}" ] ; then
+if [ -z "${CHECK_CDAP_PROGRAM_URI}" ] ; then
   echo "ERROR: -u <uri> is required"
   usage
   exit ${UNKNOWN}
 fi
 
-if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
-   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
-   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
+if [ -z ${CHECK_CDAP_PROGRAM_FLOWS} ] && [ -z ${CHECK_CDAP_PROGRAM_MAPREDUCES} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_SERVICES} ] && [ -z ${CHECK_CDAP_PROGRAM_SPARKS} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_WORKFLOWS} ] && [ -z ${CHECK_CDAP_PROGRAM_WORKERS} ] ; then
   echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
   usage
   exit ${UNKNOWN}
@@ -307,8 +307,8 @@ fi
 
 # Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
 #   program specifications
-for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} \
-  ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
+for __arg in ${CHECK_CDAP_PROGRAM_FLOWS} ${CHECK_CDAP_PROGRAM_MAPREDUCES} ${CHECK_CDAP_PROGRAM_SERVICES} ${CHECK_CDAP_PROGRAM_SPARKS} \
+  ${CHECK_CDAP_PROGRAM_WORKFLOWS} ${CHECK_CDAP_PROGRAM_WORKERS} ; do
   validate_program_options ${__arg}
 done
 
@@ -319,37 +319,37 @@ if [[ ! $(which curl) ]] ; then
 fi
 
 # Check specified flows
-IFS=',' read -ra __flows <<< "${OPT_FLOWS}"
+IFS=',' read -ra __flows <<< "${CHECK_CDAP_PROGRAM_FLOWS}"
 for __flow in "${__flows[@]}"; do
   get_flow_status ${__flow} && process_result ${__flow} ${__curr_resp}
 done
 
 # Check specified MapReduces
-IFS=',' read -ra __mapreduces <<< "${OPT_MAPREDUCES}"
+IFS=',' read -ra __mapreduces <<< "${CHECK_CDAP_PROGRAM_MAPREDUCES}"
 for __mr in "${__mapreduces[@]}"; do
   get_mapreduce_status ${__mr} && process_result ${__mr} ${__curr_resp}
 done
 
 # Check specified Services
-IFS=',' read -ra __services <<< "${OPT_SERVICES}"
+IFS=',' read -ra __services <<< "${CHECK_CDAP_PROGRAM_SERVICES}"
 for __service in "${__services[@]}"; do
   get_service_status ${__service} && process_result ${__service} ${__curr_resp}
 done
 
 # Check specified Spark jobs
-IFS=',' read -ra __sparks <<< "${OPT_SPARKS}"
+IFS=',' read -ra __sparks <<< "${CHECK_CDAP_PROGRAM_SPARKS}"
 for __spark in "${__sparks[@]}"; do
   get_spark_status ${__spark} && process_result ${__spark} ${__curr_resp}
 done
 
 # Check specified Workflows
-IFS=',' read -ra __workflows <<< "${OPT_WORKFLOWS}"
+IFS=',' read -ra __workflows <<< "${CHECK_CDAP_PROGRAM_WORKFLOWS}"
 for __wf in "${__workflows[@]}"; do
   get_workflow_status ${__wf} && process_result ${__wf} ${__curr_resp}
 done
 
 # Check specified Workers
-IFS=',' read -ra __workers <<< "${OPT_WORKERS}"
+IFS=',' read -ra __workers <<< "${CHECK_CDAP_PROGRAM_WORKERS}"
 for __worker in "${__workers[@]}"; do
   get_worker_status ${__worker} && process_result ${__worker} ${__curr_resp}
 done
