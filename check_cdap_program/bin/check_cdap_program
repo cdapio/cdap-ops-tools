@@ -90,7 +90,6 @@ WARNING=1
 CRITICAL=2
 UNKNOWN=3
 
-
 # Results
 res_status=0
 res_message=''
@@ -143,30 +142,30 @@ while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
   esac
 done
 
-# Validate args
-if [ -z "${OPT_URI}" ] ; then
-  echo "ERROR: -u <uri> is required"
-  usage
-  exit ${UNKNOWN}
-fi
+# Function definitions
 
-if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
-   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
-   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
-  echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
-  usage
-  exit ${UNKNOWN}
-fi
-
-# TODO: validate arguments to each of -f,-m,-s,-S,-w,-W are valid,
-#         comma-separated program specifications
-
-# Confirm that curl is installed
-if [[ ! $(which curl) ]] ; then
-  echo "ERROR: curl must be installed and present in \$PATH" 
-  usage
-  exit ${UNKNOWN}
-fi
+# Validates a given program specification is in the format:
+#   App.Prog[,App.Prog, ...]
+#   Input:
+#     Arg1: Program specification: (App.Prog)
+#   Output:
+#     none
+function validate_program_options {
+  local __opt_val=${1}
+  local __prog_specs=''
+  local __prog_spec=''
+  local __appname=''
+  local __progname=''
+  IFS=',' read -ra __prog_specs <<< "${__opt_val}"
+  for __prog_spec in "${__prog_specs[@]}"; do
+    IFS='.' read __appname __progname <<< "${__prog_spec}"
+    if [ -z ${__appname} ] || [ -z ${__progname} ] ; then
+      echo "ERROR: Invalid program specification given: ${__opt_val}"
+      usage
+      exit ${CRITICAL}
+    fi
+  done
+}
 
 # Convenience wrapper functions for get_program_status
 #   Input:
@@ -290,6 +289,35 @@ function process_result {
 }
 
 # Begin main logic
+
+# Validate args
+if [ -z "${OPT_URI}" ] ; then
+  echo "ERROR: -u <uri> is required"
+  usage
+  exit ${UNKNOWN}
+fi
+
+if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
+   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
+   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
+  echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
+  usage
+  exit ${UNKNOWN}
+fi
+
+# Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
+#   program specifications
+for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} \
+  ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
+  validate_program_options ${__arg}
+done
+
+# Confirm that curl is installed
+if [[ ! $(which curl) ]] ; then
+  echo "ERROR: curl must be installed and present in \$PATH"
+  exit ${UNKNOWN}
+fi
+
 # Check specified flows
 IFS=',' read -ra __flows <<< "${OPT_FLOWS}"
 for __flow in "${__flows[@]}"; do
