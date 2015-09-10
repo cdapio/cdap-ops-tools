@@ -308,7 +308,8 @@ fi
 
 # Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
 #   program specifications
-for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
+for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} \
+  ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
   validate_program_options ${__arg}
 done
 
