@@ -198,8 +198,9 @@ function get_worker_status {
 function get_program_status {
   IFS='.' read __appname __flowname <<< "${1}"
   local __progtype=${2}
-  local __status_url="${CHECK_CDAP_PROGRAM_URI}/${API_VERSION}/namespaces/${CHECK_CDAP_PROGRAM_NAMESPACE}"\
-"/apps/${__appname}/${__progtype}/${__flowname}/status"
+  local __status_url="${CHECK_CDAP_PROGRAM_URI}/${API_VERSION}/namespaces"\
+"/${CHECK_CDAP_PROGRAM_NAMESPACE}/apps/${__appname}/${__progtype}"\
+"/${__flowname}/status"
 
   # Prep and execute a curl request
   cdap_curl_request ${__status_url}
@@ -223,7 +224,8 @@ function cdap_curl_request {
   [[ ${OPT_VERBOSE} ]] && __curl_cmd="${__curl_cmd} -v"
   [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd="${__curl_cmd} -k"
   if [ -n "${CHECK_CDAP_PROGRAM_TOKEN}" ] ; then
-    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer ${CHECK_CDAP_PROGRAM_TOKEN}'"
+    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer"
+    __curl_cmd="${__curl_cmd} ${CHECK_CDAP_PROGRAM_TOKEN}'"
   fi
   __curl_cmd="${__curl_cmd} ${__url}"
 
@@ -297,9 +299,12 @@ if [ -z "${CHECK_CDAP_PROGRAM_URI}" ] ; then
   exit ${UNKNOWN}
 fi
 
-if [ -z ${CHECK_CDAP_PROGRAM_FLOWS} ] && [ -z ${CHECK_CDAP_PROGRAM_MAPREDUCES} ] && \
-   [ -z ${CHECK_CDAP_PROGRAM_SERVICES} ] && [ -z ${CHECK_CDAP_PROGRAM_SPARKS} ] && \
-   [ -z ${CHECK_CDAP_PROGRAM_WORKFLOWS} ] && [ -z ${CHECK_CDAP_PROGRAM_WORKERS} ] ; then
+if [ -z ${CHECK_CDAP_PROGRAM_FLOWS} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_MAPREDUCES} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_SERVICES} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_SPARKS} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_WORKFLOWS} ] && \
+   [ -z ${CHECK_CDAP_PROGRAM_WORKERS} ] ; then
   echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
   usage
   exit ${UNKNOWN}
@@ -307,7 +312,8 @@ fi
 
 # Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
 #   program specifications
-for __arg in ${CHECK_CDAP_PROGRAM_FLOWS} ${CHECK_CDAP_PROGRAM_MAPREDUCES} ${CHECK_CDAP_PROGRAM_SERVICES} ${CHECK_CDAP_PROGRAM_SPARKS} \
+for __arg in ${CHECK_CDAP_PROGRAM_FLOWS} ${CHECK_CDAP_PROGRAM_MAPREDUCES} \
+  ${CHECK_CDAP_PROGRAM_SERVICES} ${CHECK_CDAP_PROGRAM_SPARKS} \
   ${CHECK_CDAP_PROGRAM_WORKFLOWS} ${CHECK_CDAP_PROGRAM_WORKERS} ; do
   validate_program_options ${__arg}
 done
