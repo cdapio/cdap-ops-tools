@@ -90,7 +90,6 @@ WARNING=1
 CRITICAL=2
 UNKNOWN=3
 
-
 # Results
 res_status=0
 res_message=''
@@ -143,23 +142,7 @@ while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
   esac
 done
 
-# Validate args
-if [ -z "${OPT_URI}" ] ; then
-  echo "ERROR: -u <uri> is required"
-  usage
-  exit ${UNKNOWN}
-fi
-
-if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
-   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
-   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
-  echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
-  usage
-  exit ${UNKNOWN}
-fi
-
-# TODO: validate arguments to each of -f,-m,-s,-S,-w,-W are valid,
-#         comma-separated program specifications
+# Function definitions
 
 # Validates a given program specification is in the format:
 #   App.Prog[,App.Prog, ...]
@@ -184,19 +167,6 @@ function validate_program_options {
     fi
   done
 }
-
-# Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
-#   program specifications
-for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
-  validate_program_options ${__arg}
-done
-
-# Confirm that curl is installed
-if [[ ! $(which curl) ]] ; then
-  echo "ERROR: curl must be installed and present in \$PATH" 
-  usage
-  exit ${UNKNOWN}
-fi
 
 # Convenience wrapper functions for get_program_status
 #   Input:
@@ -320,6 +290,35 @@ function process_result {
 }
 
 # Begin main logic
+
+# Validate args
+if [ -z "${OPT_URI}" ] ; then
+  echo "ERROR: -u <uri> is required"
+  usage
+  exit ${UNKNOWN}
+fi
+
+if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
+   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
+   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
+  echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
+  usage
+  exit ${UNKNOWN}
+fi
+
+# Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
+#   program specifications
+for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
+  validate_program_options ${__arg}
+done
+
+# Confirm that curl is installed
+if [[ ! $(which curl) ]] ; then
+  echo "ERROR: curl must be installed and present in \$PATH"
+  usage
+  exit ${UNKNOWN}
+fi
+
 # Check specified flows
 IFS=',' read -ra __flows <<< "${OPT_FLOWS}"
 for __flow in "${__flows[@]}"; do
