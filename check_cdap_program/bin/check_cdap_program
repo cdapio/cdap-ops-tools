@@ -158,7 +158,6 @@ function validate_program_options {
   local __progname=''
   IFS=',' read -ra __prog_specs <<< "${__opt_val}"
   for __prog_spec in "${__prog_specs[@]}"; do
-  #  validate_program_spec ${__program}
     IFS='.' read __appname __progname <<< "${__prog_spec}"
     if [ -z ${__appname} ] || [ -z ${__progname} ] ; then
       echo "ERROR: Invalid program specification given: ${__opt_val}"
@@ -316,7 +315,6 @@ done
 # Confirm that curl is installed
 if [[ ! $(which curl) ]] ; then
   echo "ERROR: curl must be installed and present in \$PATH"
-  usage
   exit ${UNKNOWN}
 fi
 
