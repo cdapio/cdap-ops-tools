@@ -22,64 +22,84 @@ Nagios-style plugin to check status of CDAP Programs
 Requirements:
   curl
 
-Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [-f <app.flow>]
-         [-m <app.mapreduce>] [-s <app.service>] [-S <app.spark>]
-         [-w <app.workflow>] [-W <app.worker>] [-T <token>]
+Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [T <token>]
+         [-f <app.flow>[,<app.flow> ...]]
+         [-m <app.mapreduce>[,<app.mapreduce> ...]]
+         [-s <app.service>[,<app.service> ...]]
+         [-S <app.spark>[,<app.spark> ...]]
+         [-w <app.workflow>[,<app.workflow> ...]]
+         [-W <app.worker>[,<app.worker> ...]]
 
 Options:
-  -h			Usage info
-  -u <uri>		CDAP Router endpoint to check
-  -n <namespace>        CDAP Namespace to query
-  -f <app.flows>        CDAP target Flow to check. Each Flow must be prepended
+  -h                    Usage information.
+  -u <uri>              CDAP Router endpoint to check. Defaults to the
+                        environment variable CHECK_CDAP_URI, else empty.
+  -n <namespace>        CDAP Namespace to query. Defaults to the environment
+                        variable CHECK_CDAP_NAMESPACE, else 'default'.
+  -f <app.flow>         CDAP target Flow to check. Each Flow must be prepended
                         with the Application name and delimited with a period.
                         Multiple Application.Flow pairs can be specified as a
-                        comma-separated list
+                        comma-separated list. Defaults to the environment
+                        variable CHECK_CDAP_FLOWS, else empty.
   -m <app.mapreduce>    CDAP target MapReduce to check. Each MapReduce must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.MapReduce pairs can be
-                        specified as a comma-separated list
-  -s <app.services> 	CDAP target Service to check. Each Service must be
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_MAPREDUCES, else empty.
+  -s <app.service>      CDAP target Service to check. Each Service must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Service pairs can be
-                        specified as a comma-separated list
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_SERVICES, else empty.
   -S <app.spark>        CDAP target Spark jobs to check. Each Spark job must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Spark pairs can be
-                        specified as a comma-separated list
-  -w <app.workflows>    CDAP target Workflow to check. Each Workflow must be
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_SPARKS, else empty.
+  -w <app.workflow>     CDAP target Workflow to check. Each Workflow must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Workflow pairs can be
-                        specified as a comma-separated list
-  -W <app.workers>      CDAP target Workers to check. Each Worker must be
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_WORKFLOWS, else empty.
+  -W <app.worker>       CDAP target Workers to check. Each Worker must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Worker pairs can be
-                        specified as a comma-separated list
-  -t <timeout>		override default timeout (seconds)
-  -T <token>            CDAP Access Token
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_WORKERS, else empty.
+  -t <timeout>          Override default timeout (seconds). Defaults to the
+                        environment variable CHECK_CDAP_TIMEOUT, else 30.
+  -T <token>            CDAP Access Token. Defaults to the environment variable
+                        CHECK_CDAP_TOKEN, else empty.
   -k                    Disable SSL certification validation
-  -v			verbose (debug) output
+  -v                    Verbose (debug) output.
 
-Example:
-  $0 -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow
-       -s MyApp.MyService1,MyApp.MyService2
+
+Examples:
+  Check that a Flow and two Services are running in a specific namespace:
+    $0 -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow \\
+    -s MyApp.MyService1,MyApp.MyService2
+
+  Check that a flow is running, using environment variables:
+    CHECK_CDAP_URI=http://my.cdap.router.endpoint:10000 \\
+    CHECK_CDAP_FLOWS=MyApp.MyFlow \\
+    $0
+
 
 EOF
 }
 
-# TODO: Allow overriding options from the environment
-
 # Option defaults
 OPT_VERBOSE=''
-OPT_URI=''
-OPT_NAMESPACE='default'
-OPT_FLOWS=''
-OPT_MAPREDUCES=''
-OPT_SERVICES=''
-OPT_SPARKS=''
-OPT_WORKFLOWS=''
-OPT_WORKERS=''
-OPT_TIMEOUT=30
-OPT_TOKEN=''
+CHECK_CDAP_URI=${CHECK_CDAP_URI}
+CHECK_CDAP_NAMESPACE=${CHECK_CDAP_NAMESPACE:-default}
+CHECK_CDAP_FLOWS=${CHECK_CDAP_FLOWS}
+CHECK_CDAP_MAPREDUCES=${CHECK_CDAP_MAPREDUCES}
+CHECK_CDAP_SERVICES=${CHECK_CDAP_SERVICES}
+CHECK_CDAP_SPARKS=${CHECK_CDAP_SPARKS}
+CHECK_CDAP_WORKFLOWS=${CHECK_CDAP_WORKFLOWS}
+CHECK_CDAP_WORKERS=${CHECK_CDAP_WORKERS}
+CHECK_CDAP_TIMEOUT=${CHECK_CDAP_TIMEOUT:-30}
+CHECK_CDAP_TOKEN=${CHECK_CDAP_TOKEN}
 OPT_SSL_INSECURE=''
 
 API_VERSION='v3'
@@ -105,31 +125,31 @@ while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
       OPT_VERBOSE=1
       ;;
     u)
-      OPT_URI=${OPTARG}
+      CHECK_CDAP_URI=${OPTARG}
       ;;
     f)
-      OPT_FLOWS=${OPTARG}
+      CHECK_CDAP_FLOWS=${OPTARG}
       ;;
     m)
-      OPT_MAPREDUCES=${OPTARG}
+      CHECK_CDAP_MAPREDUCES=${OPTARG}
       ;;
     s)
-      OPT_SERVICES=${OPTARG}
+      CHECK_CDAP_SERVICES=${OPTARG}
       ;;
     S)
-      OPT_SPARKS=${OPTARG}
+      CHECK_CDAP_SPARKS=${OPTARG}
       ;;
     w)
-      OPT_WORKFLOWS=${OPTARG}
+      CHECK_CDAP_WORKFLOWS=${OPTARG}
       ;;
     W)
-      OPT_WORKERS=${OPTARG}
+      CHECK_CDAP_WORKERS=${OPTARG}
       ;;
     t)
-      OPT_TIMEOUT=${OPTARG}
+      CHECK_CDAP_TIMEOUT=${OPTARG}
       ;;
     T)
-      OPT_TOKEN=${OPTARG}
+      CHECK_CDAP_TOKEN=${OPTARG}
       ;;
     k)
       OPT_SSL_INSECURE=1
@@ -198,8 +218,9 @@ function get_worker_status {
 function get_program_status {
   IFS='.' read __appname __flowname <<< "${1}"
   local __progtype=${2}
-  local __status_url="${OPT_URI}/${API_VERSION}/namespaces/${OPT_NAMESPACE}"\
-"/apps/${__appname}/${__progtype}/${__flowname}/status"
+  local __status_url="${CHECK_CDAP_URI}/${API_VERSION}/namespaces"\
+"/${CHECK_CDAP_NAMESPACE}/apps/${__appname}/${__progtype}"\
+"/${__flowname}/status"
 
   # Prep and execute a curl request
   cdap_curl_request ${__status_url}
@@ -219,13 +240,14 @@ function cdap_curl_request {
   local __url=${1}
 
   # Build curl command
-  local __curl_cmd="curl -s -m ${OPT_TIMEOUT} -w ' %{http_code}'"
-  [[ ${OPT_VERBOSE} ]] && __curl_cmd="${__curl_cmd} -v"
-  [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd="${__curl_cmd} -k"
-  if [ -n "${OPT_TOKEN}" ] ; then
-    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer ${OPT_TOKEN}'"
+  local __curl_cmd="curl -s -m ${CHECK_CDAP_TIMEOUT} -w ' %{http_code}'"
+  [[ ${OPT_VERBOSE} ]] && __curl_cmd+=' -v'
+  [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd+=' -k'
+  if [ -n "${CHECK_CDAP_TOKEN}" ] ; then
+    __curl_cmd+=" -H 'Authorization: Bearer"
+    __curl_cmd+=" ${CHECK_CDAP_TOKEN}'"
   fi
-  __curl_cmd="${__curl_cmd} ${__url}"
+  __curl_cmd+=" ${__url}"
 
   # Run curl command
   local __resp=$(eval ${__curl_cmd})
@@ -243,7 +265,7 @@ function cdap_curl_request {
     200)
       ;;
     401)
-      if [ -n "${OPT_TOKEN}" ] ; then
+      if [ -n "${CHECK_CDAP_TOKEN}" ] ; then
         echo "UNKNOWN: Invalid CDAP Access Token: ${__resp}"
       else
         echo "UNKNOWN: CDAP Access Token required: ${__resp}"
@@ -291,15 +313,15 @@ function process_result {
 # Begin main logic
 
 # Validate args
-if [ -z "${OPT_URI}" ] ; then
+if [ -z "${CHECK_CDAP_URI}" ] ; then
   echo "ERROR: -u <uri> is required"
   usage
   exit ${UNKNOWN}
 fi
 
-if [ -z ${OPT_FLOWS} ] && [ -z ${OPT_MAPREDUCES} ] && \
-   [ -z ${OPT_SERVICES} ] && [ -z ${OPT_SPARKS} ] && \
-   [ -z ${OPT_WORKFLOWS} ] && [ -z ${OPT_WORKERS} ] ; then
+if [ -z ${CHECK_CDAP_FLOWS} ] && [ -z ${CHECK_CDAP_MAPREDUCES} ] && \
+   [ -z ${CHECK_CDAP_SERVICES} ] && [ -z ${CHECK_CDAP_SPARKS} ] && \
+   [ -z ${CHECK_CDAP_WORKFLOWS} ] && [ -z ${CHECK_CDAP_WORKERS} ] ; then
   echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
   usage
   exit ${UNKNOWN}
@@ -307,8 +329,9 @@ fi
 
 # Validate arguments to each of -f,-m,-s,-S,-w,-W are valid, comma-separated
 #   program specifications
-for __arg in ${OPT_FLOWS} ${OPT_MAPREDUCES} ${OPT_SERVICES} ${OPT_SPARKS} \
-  ${OPT_WORKFLOWS} ${OPT_WORKERS} ; do
+for __arg in ${CHECK_CDAP_FLOWS} ${CHECK_CDAP_MAPREDUCES} \
+  ${CHECK_CDAP_SERVICES} ${CHECK_CDAP_SPARKS} \
+  ${CHECK_CDAP_WORKFLOWS} ${CHECK_CDAP_WORKERS} ; do
   validate_program_options ${__arg}
 done
 
@@ -319,37 +342,37 @@ if [[ ! $(which curl) ]] ; then
 fi
 
 # Check specified flows
-IFS=',' read -ra __flows <<< "${OPT_FLOWS}"
+IFS=',' read -ra __flows <<< "${CHECK_CDAP_FLOWS}"
 for __flow in "${__flows[@]}"; do
   get_flow_status ${__flow} && process_result ${__flow} ${__curr_resp}
 done
 
 # Check specified MapReduces
-IFS=',' read -ra __mapreduces <<< "${OPT_MAPREDUCES}"
+IFS=',' read -ra __mapreduces <<< "${CHECK_CDAP_MAPREDUCES}"
 for __mr in "${__mapreduces[@]}"; do
   get_mapreduce_status ${__mr} && process_result ${__mr} ${__curr_resp}
 done
 
 # Check specified Services
-IFS=',' read -ra __services <<< "${OPT_SERVICES}"
+IFS=',' read -ra __services <<< "${CHECK_CDAP_SERVICES}"
 for __service in "${__services[@]}"; do
   get_service_status ${__service} && process_result ${__service} ${__curr_resp}
 done
 
 # Check specified Spark jobs
-IFS=',' read -ra __sparks <<< "${OPT_SPARKS}"
+IFS=',' read -ra __sparks <<< "${CHECK_CDAP_SPARKS}"
 for __spark in "${__sparks[@]}"; do
   get_spark_status ${__spark} && process_result ${__spark} ${__curr_resp}
 done
 
 # Check specified Workflows
-IFS=',' read -ra __workflows <<< "${OPT_WORKFLOWS}"
+IFS=',' read -ra __workflows <<< "${CHECK_CDAP_WORKFLOWS}"
 for __wf in "${__workflows[@]}"; do
   get_workflow_status ${__wf} && process_result ${__wf} ${__curr_resp}
 done
 
 # Check specified Workers
-IFS=',' read -ra __workers <<< "${OPT_WORKERS}"
+IFS=',' read -ra __workers <<< "${CHECK_CDAP_WORKERS}"
 for __worker in "${__workers[@]}"; do
   get_worker_status ${__worker} && process_result ${__worker} ${__curr_resp}
 done
