@@ -31,7 +31,7 @@ Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [T <token>]
          [-W <app.worker>[,<app.worker> ...]]
 
 Options:
-  -h                    Usage info
+  -h                    Usage information.
   -u <uri>              CDAP Router endpoint to check. Defaults to the
                         environment variable CHECK_CDAP_URI, else empty.
   -n <namespace>        CDAP Namespace to query. Defaults to the environment
@@ -66,12 +66,12 @@ Options:
                         a period. Multiple Application.Worker pairs can be
                         specified as a comma-separated list. Defaults to the
                         environment variable CHECK_CDAP_WORKERS, else empty.
-  -t <timeout>          override default timeout (seconds). Defaults to the
+  -t <timeout>          Override default timeout (seconds). Defaults to the
                         environment variable CHECK_CDAP_TIMEOUT, else 30.
   -T <token>            CDAP Access Token. Defaults to the environment variable
                         CHECK_CDAP_TOKEN, else empty.
   -k                    Disable SSL certification validation
-  -v                    verbose (debug) output
+  -v                    Verbose (debug) output.
 
 
 Examples:
