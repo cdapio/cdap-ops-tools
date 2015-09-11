@@ -242,13 +242,13 @@ function cdap_curl_request {
 
   # Build curl command
   local __curl_cmd="curl -s -m ${CHECK_CDAP_PROGRAM_TIMEOUT} -w ' %{http_code}'"
-  [[ ${OPT_VERBOSE} ]] && __curl_cmd="${__curl_cmd} -v"
-  [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd="${__curl_cmd} -k"
+  [[ ${OPT_VERBOSE} ]] && __curl_cmd+=' -v'
+  [[ ${OPT_SSL_INSECURE} ]] && __curl_cmd+=' -k'
   if [ -n "${CHECK_CDAP_PROGRAM_TOKEN}" ] ; then
-    __curl_cmd="${__curl_cmd} -H 'Authorization: Bearer"
-    __curl_cmd="${__curl_cmd} ${CHECK_CDAP_PROGRAM_TOKEN}'"
+    __curl_cmd+=" -H 'Authorization: Bearer"
+    __curl_cmd+=" ${CHECK_CDAP_PROGRAM_TOKEN}'"
   fi
-  __curl_cmd="${__curl_cmd} ${__url}"
+  __curl_cmd+=" ${__url}"
 
   # Run curl command
   local __resp=$(eval ${__curl_cmd})
