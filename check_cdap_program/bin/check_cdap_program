@@ -45,32 +45,27 @@ Options:
                         prepended with the Application name and delimited with
                         a period. Multiple Application.MapReduce pairs can be
                         specified as a comma-separated list. Defaults to the
-                        environment variable CHECK_CDAP_MAPREDUCES,
-                        else empty.
+                        environment variable CHECK_CDAP_MAPREDUCES, else empty.
   -s <app.service>      CDAP target Service to check. Each Service must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Service pairs can be
                         specified as a comma-separated list. Defaults to the
-                        environment variable CHECK_CDAP_SERVICES, else
-                        empty.
+                        environment variable CHECK_CDAP_SERVICES, else empty.
   -S <app.spark>        CDAP target Spark jobs to check. Each Spark job must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Spark pairs can be
                         specified as a comma-separated list. Defaults to the
-                        environment variable CHECK_CDAP_SPARKS, else
-                        empty.
+                        environment variable CHECK_CDAP_SPARKS, else empty.
   -w <app.workflow>     CDAP target Workflow to check. Each Workflow must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Workflow pairs can be
                         specified as a comma-separated list. Defaults to the
-                        environment variable CHECK_CDAP_WORKFLOWS, else
-                        empty.
+                        environment variable CHECK_CDAP_WORKFLOWS, else empty.
   -W <app.worker>       CDAP target Workers to check. Each Worker must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Worker pairs can be
                         specified as a comma-separated list. Defaults to the
-                        environment variable CHECK_CDAP_WORKERS, else
-                        empty.
+                        environment variable CHECK_CDAP_WORKERS, else empty.
   -t <timeout>          override default timeout (seconds). Defaults to the
                         environment variable CHECK_CDAP_TIMEOUT, else 30.
   -T <token>            CDAP Access Token. Defaults to the environment variable
@@ -324,12 +319,9 @@ if [ -z "${CHECK_CDAP_URI}" ] ; then
   exit ${UNKNOWN}
 fi
 
-if [ -z ${CHECK_CDAP_FLOWS} ] && \
-   [ -z ${CHECK_CDAP_MAPREDUCES} ] && \
-   [ -z ${CHECK_CDAP_SERVICES} ] && \
-   [ -z ${CHECK_CDAP_SPARKS} ] && \
-   [ -z ${CHECK_CDAP_WORKFLOWS} ] && \
-   [ -z ${CHECK_CDAP_WORKERS} ] ; then
+if [ -z ${CHECK_CDAP_FLOWS} ] && [ -z ${CHECK_CDAP_MAPREDUCES} ] && \
+   [ -z ${CHECK_CDAP_SERVICES} ] && [ -z ${CHECK_CDAP_SPARKS} ] && \
+   [ -z ${CHECK_CDAP_WORKFLOWS} ] && [ -z ${CHECK_CDAP_WORKERS} ] ; then
   echo "ERROR: Nothing to check. Please provide -f, -m, -s, -S, -w, or -W flags"
   usage
   exit ${UNKNOWN}
