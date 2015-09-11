@@ -27,41 +27,64 @@ Usage: $0 [-hvk] [-t timeout] -u <uri> [-n <namespace>] [-f <app.flow>]
          [-w <app.workflow>] [-W <app.worker>] [-T <token>]
 
 Options:
-  -h			Usage info
-  -u <uri>		CDAP Router endpoint to check
-  -n <namespace>        CDAP Namespace to query
+  -h                    Usage info
+  -u <uri>              CDAP Router endpoint to check. Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_URI, else empty
+  -n <namespace>        CDAP Namespace to query. Defaults to the environment
+                        variable CHECK_CDAP_PROGRAM_NAMESPACE, else 'default'
   -f <app.flows>        CDAP target Flow to check. Each Flow must be prepended
                         with the Application name and delimited with a period.
                         Multiple Application.Flow pairs can be specified as a
-                        comma-separated list
+                        comma-separated list. Defaults to the environment
+                        variable CHECK_CDAP_PROGRAM_FLOWS, else empty
   -m <app.mapreduce>    CDAP target MapReduce to check. Each MapReduce must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.MapReduce pairs can be
-                        specified as a comma-separated list
-  -s <app.services> 	CDAP target Service to check. Each Service must be
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_MAPREDUCES,
+                        else empty
+  -s <app.services>     CDAP target Service to check. Each Service must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Service pairs can be
-                        specified as a comma-separated list
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_SERVICES, else
+                        empty
   -S <app.spark>        CDAP target Spark jobs to check. Each Spark job must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Spark pairs can be
-                        specified as a comma-separated list
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_SPARKS, else
+                        empty
   -w <app.workflows>    CDAP target Workflow to check. Each Workflow must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Workflow pairs can be
-                        specified as a comma-separated list
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_WORKFLOWS, else
+                        empty
   -W <app.workers>      CDAP target Workers to check. Each Worker must be
                         prepended with the Application name and delimited with
                         a period. Multiple Application.Worker pairs can be
-                        specified as a comma-separated list
-  -t <timeout>		override default timeout (seconds)
-  -T <token>            CDAP Access Token
+                        specified as a comma-separated list. Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_WORKERS, else
+                        empty
+  -t <timeout>          override default timeout (seconds). Defaults to the
+                        environment variable CHECK_CDAP_PROGRAM_TIMEOUT, else 30
+  -T <token>            CDAP Access Token. Defaults to the environment variable
+                        CHECK_CDAP_PROGRAM_TOKEN, else empty
   -k                    Disable SSL certification validation
-  -v			verbose (debug) output
+  -v                    verbose (debug) output
 
-Example:
-  $0 -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow
-       -s MyApp.MyService1,MyApp.MyService2
+
+Examples:
+  Check that a Flow and two Services are running in a specific namespace:
+    $0 -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow \\
+    -s MyApp.MyService1,MyApp.MyService2
+
+  Check that a flow is running, using environment variables:
+    CHECK_CDAP_PROGRAM_URI=http://my.cdap.router.endpoint:10000 \\
+    CHECK_CDAP_PROGRAM_FLOWS=MyApp.MyFlow \\
+    $0
+
 
 EOF
 }
