@@ -89,8 +89,6 @@ Examples:
 EOF
 }
 
-# TODO: Allow overriding options from the environment
-
 # Option defaults
 OPT_VERBOSE=''
 CHECK_CDAP_PROGRAM_URI=${CHECK_CDAP_PROGRAM_URI:-''}
