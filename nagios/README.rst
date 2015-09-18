@@ -7,7 +7,7 @@ Plugins for monitoring CDAP from `Nagios <https://www.nagios.org>`__
 Check CDAP Program Plugin
 =========================
 
-Nagios-style plugin to check status of CDAP Programs
+Nagios-style plugin to check status of CDAP Programs. `Downloadable here <check_cdap_program/bin/check_cdap_program>`__.
 
 Requirements::
 
