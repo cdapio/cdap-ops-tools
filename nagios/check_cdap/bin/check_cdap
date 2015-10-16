@@ -27,7 +27,7 @@ Usage: $0 [-hvk] [-t timeout] -u <uri> -T <token>
 Options:
   -h                    Usage information.
   -u <uri>              CDAP Router endpoint to check. Defaults to the
-                        environment variable CHECK_CDAP_URI, else empty.
+                        environment variable CHECK_CDAP_URI, else http://localhost:10000.
   -t <timeout>          Override default timeout (seconds). Defaults to the
                         environment variable CHECK_CDAP_TIMEOUT, else 30.
   -T <token>            CDAP Access Token. Defaults to the environment variable
