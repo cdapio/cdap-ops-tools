@@ -97,6 +97,8 @@ function get_service_status {
   local __status_url="${CHECK_CDAP_URI}/${API_VERSION}/system/services/status"
   local __services=''
   local __element=''
+  local __service=''
+  local __status=''
 
   # Prep and execute a curl request
   cdap_curl_request ${__status_url}
@@ -105,7 +107,32 @@ function get_service_status {
     IFS=',' read -a services <<< "${__curr_resp}"
     for element in "${services[@]}"
     do
-      echo "$element"
+      IFS=':' read __service __status <<< "${element}"
+      # Trim to text between the quotes
+      __status="${__status%\"*}"
+      __status="${__status#*\"}"
+      __service="${__service%\"*}"
+      __service="${__service#*\"}"
+
+      # Ensure we have a result
+      if [ -z ${__service} ] || [ -z ${__status} ] ; then
+        echo "ERROR: unexpected response from CDAP api: ${services}"
+        exit ${CRITICAL}
+      fi
+
+      # Check for NOTOK
+      if [[ ${__status} =~ "NOTOK" ]] ; then
+        # Append to, or initialize, result message
+        res_status=${CRITICAL}
+        if [ -z "${res_message}" ] ; then
+          res_message=${__service}=${__status}
+        else
+          res_message=${res_message},${__service}=${__status}
+        fi
+
+        # Set exit status
+        res_status=${CRITICAL}
+      fi
     done
 }
 
@@ -185,7 +212,7 @@ get_service_status
 # Prepend result message with status string
 case ${res_status} in
   0)
-    res_message="OK: ${res_message}"
+    res_message="OK: All CDAP system services running"
     ;;
   1)
     res_message="WARN: ${res_message}"
