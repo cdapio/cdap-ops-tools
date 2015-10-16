@@ -37,12 +37,8 @@ Options:
 
 
 Examples:
-  Check that a Flow and two Services are running in a specific namespace:
+  Check that CDAP System Services are running:
     $0 -u http://my.cdap.router.endpoint:10000
-
-  Check that a flow is running, using environment variables:
-    CHECK_CDAP_URI=http://my.cdap.router.endpoint:10000 \\
-    $0
 
 EOF
 }
