@@ -95,13 +95,15 @@ done
 # Get CDAP Service status and check for them to be OK
 function get_service_status {
   local __status_url="${CHECK_CDAP_URI}/${API_VERSION}/system/services/status"
+  local __services=''
+  local __element=''
 
   # Prep and execute a curl request
   cdap_curl_request ${__status_url}
 
   # Split response on , this will give array element as  "service_name":"STATUS"
-    IFS=',' read -a array <<< "$__curr_resp"
-    for element in "${array[@]}"
+    IFS=',' read -a services <<< "${__curr_resp}"
+    for element in "${services[@]}"
     do
       echo "$element"
     done
