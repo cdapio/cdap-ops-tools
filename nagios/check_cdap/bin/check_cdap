@@ -182,6 +182,14 @@ function cdap_curl_request {
       echo "CRITICAL: CDAP Endpoint not found ${__respcode}: ${__url}"
       exit ${CRITICAL}
       ;;
+    000)
+      echo "UNKNOWN: CDAP Router appears to be down. HTTP response code ${__response}: ${__resp}"
+      exit ${UNKNOWN}
+      ;;
+    503)
+      echo "UNKNOWN: CDAP Master container not responding. HTTP response code ${__response}: ${__resp}"
+      exit ${UNKNOWN}
+      ;;
     *)
       echo "UNKNOWN: unexpected HTTP response code ${__respcode}: ${__resp}"
       exit ${UNKNOWN}
