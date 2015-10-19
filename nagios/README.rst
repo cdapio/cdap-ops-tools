@@ -4,6 +4,36 @@ CDAP Nagios Plugins
 
 Plugins for monitoring CDAP from `Nagios <https://www.nagios.org>`__
 
+Check CDAP Plugin
+=================
+
+Nagios-style plugin to check status of CDAP System Services. `Downloadable here <check_cdap/bin/check_cdap>`__.
+
+Requirements::
+
+  curl
+
+Usage::
+
+  check_cdap/bin/check_cdap [-hvk] [-t timeout] -u <uri> -T <token>
+
+Options:
+  -h                    Usage information.
+  -u <uri>              CDAP Router endpoint to check. Defaults to the
+                        environment variable CHECK_CDAP_URI, else empty.
+  -t <timeout>          Override default timeout (seconds). Defaults to the
+                        environment variable CHECK_CDAP_TIMEOUT, else 30.
+  -T <token>            CDAP Access Token. Defaults to the environment variable
+                        CHECK_CDAP_TOKEN, else empty.
+  -k                    Disable SSL certification validation
+  -v                    Verbose (debug) output.
+
+
+Examples::
+
+  Check that CDAP System Services are running:
+    ./check_cdap/bin/check_cdap -u http://my.cdap.router.endpoint:10000
+
 Check CDAP Program Plugin
 =========================
 
