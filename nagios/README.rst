@@ -17,7 +17,7 @@ Usage::
 
   check_cdap/bin/check_cdap [-hvk] [-t timeout] -u <uri> -T <token>
 
-Options:
+Options::
   -h                    Usage information.
   -u <uri>              CDAP Router endpoint to check. Defaults to the
                         environment variable CHECK_CDAP_URI, else empty.
