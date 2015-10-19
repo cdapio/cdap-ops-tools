@@ -7,6 +7,12 @@ A repository for tools that can be used to monitor CDAP installations.
 - `Nagios Plugins: <nagios/README.rst>`__ Plugins for monitoring CDAP from `Nagios <https://www.nagios.org>`__
 
 
+Support
+=======
+
+This repository uses the main CDAP `issue tracker <https://issues.cask.co/browse/CDAP>`__ for filing bug reports
+and the main CDAP `mailing list <https://groups.google.com/forum/#!forum/cdap-user>`__ for discussion and support.
+
 License
 =======
 
