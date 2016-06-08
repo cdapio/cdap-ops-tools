@@ -116,7 +116,7 @@ res_status=0
 res_message=''
 
 # Read in args
-while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
+while getopts "hvku:n:f:m:s:S:w:W:t:T:" opt; do
   case $opt in
     h)
       usage
@@ -127,6 +127,9 @@ while getopts "hvku:f:m:s:S:w:W:t:T:" opt; do
       ;;
     u)
       CHECK_CDAP_URI=${OPTARG}
+      ;;
+    n)
+      CHECK_CDAP_NAMESPACE=${OPTARG}
       ;;
     f)
       CHECK_CDAP_FLOWS=${OPTARG}
