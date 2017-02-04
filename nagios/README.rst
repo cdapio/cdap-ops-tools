@@ -33,7 +33,7 @@ Options::
 Examples::
 
   Check that CDAP System Services are running:
-    ./check_cdap/bin/check_cdap -u http://my.cdap.router.endpoint:10000
+    ./check_cdap/bin/check_cdap -u http://my.cdap.router.endpoint:11015
 
 Check CDAP Program Plugin
 =========================
@@ -102,11 +102,11 @@ Options::
 Examples::
 
   Check that a Flow and two Services are running in a specific namespace:
-    check_cdap_program -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow \\
+    check_cdap_program -u http://my.cdap.router.endpoint:11015 -n mynamespace -f MyApp.MyFlow \\
     -s MyApp.MyService1,MyApp.MyService2
 
   Check that a flow is running, using environment variables:
-    CHECK_CDAP_URI=http://my.cdap.router.endpoint:10000 \\
+    CHECK_CDAP_URI=http://my.cdap.router.endpoint:11015 \\
     CHECK_CDAP_FLOWS=MyApp.MyFlow \\
     check_cdap_program
 
