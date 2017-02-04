@@ -34,7 +34,7 @@ Options:
   -h                    Usage information.
   -u <uri>              CDAP Router endpoint to check. Defaults to the
                         environment variable CHECK_CDAP_URI, else
-                        http://localhost:10000.
+                        http://localhost:11015.
   -n <namespace>        CDAP Namespace to query. Defaults to the environment
                         variable CHECK_CDAP_NAMESPACE, else 'default'.
   -f <app.flow>         CDAP target Flow to check. Each Flow must be prepended
@@ -77,11 +77,11 @@ Options:
 
 Examples:
   Check that a Flow and two Services are running in a specific namespace:
-    $0 -u http://my.cdap.router.endpoint:10000 -n mynamespace -f MyApp.MyFlow \\
+    $0 -u http://my.cdap.router.endpoint:11015 -n mynamespace -f MyApp.MyFlow \\
     -s MyApp.MyService1,MyApp.MyService2
 
   Check that a flow is running, using environment variables:
-    CHECK_CDAP_URI=http://my.cdap.router.endpoint:10000 \\
+    CHECK_CDAP_URI=http://my.cdap.router.endpoint:11015 \\
     CHECK_CDAP_FLOWS=MyApp.MyFlow \\
     $0
 
@@ -91,7 +91,7 @@ EOF
 
 # Option defaults
 OPT_VERBOSE=''
-CHECK_CDAP_URI=${CHECK_CDAP_URI:-'http://localhost:10000'}
+CHECK_CDAP_URI=${CHECK_CDAP_URI:-'http://localhost:11015'}
 CHECK_CDAP_NAMESPACE=${CHECK_CDAP_NAMESPACE:-default}
 CHECK_CDAP_FLOWS=${CHECK_CDAP_FLOWS}
 CHECK_CDAP_MAPREDUCES=${CHECK_CDAP_MAPREDUCES}
